@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 //import logo from './logo.svg';
 import './App.css';
-//import { Navbar, Jumbotron, Button } from 'react-bootstrap';
+import { Modal, Button } from 'react-bootstrap';
 
 class BookList extends Component {
   constructor(props) {
@@ -150,11 +151,7 @@ class ShippingDetails extends Component {
                   onChange={(event) => this.handleChange(event, 'shippingAddress')} />
             </div>
             <div className="form-group">
-              <button type="submit"
-                  ref="submit"
-                  className="btn btn-success">
-                Submit
-              </button>
+              <Button type="submit" bsStyle="success">Submit</Button>
             </div>
           </form>
         </div>
@@ -207,9 +204,7 @@ class DeliveryDetails extends Component {
                 Normal -- 3-4 days
               </label>
             </div>
-            <button className="btn btn-success">
-              Submit
-            </button>
+            <Button type="submit" bsStyle="success">Submit</Button>
           </form>
         </div>
         <div className="well">
@@ -243,9 +238,7 @@ class Confirmation extends Component {
           <div>
             <strong>Selected books</strong> : { this.props.data.selectedBooks.join(", ") }
           </div><br/>
-          <button className="btn btn-success">
-            Place order
-          </button>
+          <Button type="submit" bsStyle="success">Place order</Button>
         </form>
       </div>
     )
@@ -323,26 +316,54 @@ DeliveryDetailsWithTimeout.propTypes = {
   cartTimeout: React.PropTypes.number.isRequired
 };
 
+class ModalAlertTimeout extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      show: false
+    }
+  }
+  showModal() {
+    this.setState({show: true});
+  }
+  hideModal() {
+    this.setState({show: false});
+  }
+  componentDidMount() {
+    setTimeout(() => this.showModal(), 100)
+  }
+  render() {
+    return (
+      <Modal show={this.state.show} onHide={() => this.hideModal()}>
+        <Modal.Header closeButton>
+          <Modal.Title>Timeout</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>The cart has timed-out. Please try again!</p>
+        </Modal.Body>
+      </Modal>
+    )
+  }
+}
+
 class BookStore extends Component {
   constructor(props) {
     super(props);
     this.state = {
       currentState: 1,
       formValues: {},
-      cartTimeout: 10 * 60
+      cartTimeout: 600
     }
   }
   updateCartTimeout(timeout) {
     this.setState({cartTimeout: timeout})
   }
   alertCartTimeout(){
-    this.setState({currentState: 10});
+    ReactDOM.render(<ModalAlertTimeout />, document.getElementById('modalAlertTimeout'));
+    this.setState({currentState: 1, formValues: {}, cartTimeout: 600});
   }
   render() {
     switch (this.state.currentState) {
-      case 10:
-        /* Handle the case of Cart timeout */
-        return <div><h2>Your cart timed out, Please try again!</h2></div>;
       case 5:
         return <Success data={this.state.formValues} />;
       case 4:
@@ -374,7 +395,10 @@ class BookStore extends Component {
 class App extends Component {
   render() {
     return (
-      <BookStore />
+        <div>
+          <div id="modalAlertTimeout"></div>
+          <BookStore />
+        </div>
     );
   }
 }
