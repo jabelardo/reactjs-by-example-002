@@ -36,8 +36,8 @@ class BookList extends Component {
     )
   }
   handleSelectBook(event) {
-    let selectedBooks = this.state.selectedBooks;
-    let index = selectedBooks.indexOf(event.target.value);
+    const selectedBooks = this.state.selectedBooks;
+    const index = selectedBooks.indexOf(event.target.value);
     if (event.target.checked) {
       if (index === -1) selectedBooks.push(event.target.value);
     } else {
@@ -55,7 +55,7 @@ class BookList extends Component {
     }
   }
   render() {
-    let errorMessage = this.renderError();
+    const errorMessage = this.renderError();
     return (
       <div>
         <h3>Choose from wide variety of books available in our store.</h3>
@@ -104,7 +104,7 @@ class ShippingDetails extends Component {
   }
   handleSubmit(event) {
     event.preventDefault();
-    let formData = {
+    const formData = {
       fullName: this.state.fullName,
       contactNumber: this.state.contactNumber,
       shippingAddress: this.state.shippingAddress
@@ -114,13 +114,14 @@ class ShippingDetails extends Component {
     }
   }
    handleChange(event, attribute) {
-      let newState = this.state;
+      const newState = this.state;
       newState[attribute] = event.target.value;
       this.setState(newState);
-      // console.log(this.state);
   }
   render() {
-    let errorMessage = this.renderError();
+    const errorMessage = this.renderError();
+    const minutes = Math.floor(this.props.cartTimeout / 60);
+    const seconds = this.props.cartTimeout - minutes * 60;
     return (
       <div>
         <h1>Enter your shipping information.</h1>
@@ -157,6 +158,10 @@ class ShippingDetails extends Component {
             </div>
           </form>
         </div>
+        <div className="well">
+          <span className="glyphicon glyphicon-time" aria-hidden="true"/>&nbsp;
+          You have {minutes} Minutes, {seconds} Seconds, before confirming order
+        </div>
       </div>
     )
   }
@@ -165,7 +170,9 @@ class ShippingDetails extends Component {
 class DeliveryDetails extends Component {
   constructor(props) {
     super(props);
-    this.state = {deliveryOption: "Primary"}
+    this.state = {
+      deliveryOption: "Primary"
+    }
   }
   handleChange(event) {
     this.setState({deliveryOption: event.target.value})
@@ -175,6 +182,8 @@ class DeliveryDetails extends Component {
     this.props.updateFormData(this.state)
   }
   render() {
+    const minutes = Math.floor(this.props.cartTimeout / 60);
+    const seconds = this.props.cartTimeout - minutes * 60;
     return (
       <div>
         <h1>Choose your delivery options here.</h1>
@@ -202,6 +211,10 @@ class DeliveryDetails extends Component {
               Submit
             </button>
           </form>
+        </div>
+        <div className="well">
+          <span className="glyphicon glyphicon-time" aria-hidden="true"/>&nbsp;
+          You have {minutes} Minutes, {seconds} Seconds, before confirming order
         </div>
       </div>
     )
@@ -241,41 +254,119 @@ class Confirmation extends Component {
 
 class Success extends Component {
   render() {
-    let numberOfDays = (this.props.data.deliveryOption === 'Normal') ?
+    const numberOfDays = (this.props.data.deliveryOption === 'Normal') ?
       "3 to 4" : "1 to 2";
     return (
       <div>
         <h2>Thank you for shopping with us {this.props.data.fullName}.</h2>
         <h4>
           You will soon get {this.props.data.selectedBooks.join(", ")} at &nbsp; 
-          {this.props.data.shippingAddress} in approrximately {numberOfDays} days.
+          {this.props.data.shippingAddress} in approximately {numberOfDays} days.
         </h4>
       </div>
     )
   }
 }
 
+function withIntervals(WrappedComponent) {
+  return class extends Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        intervals: []
+      }
+    }
+    setInterval() {
+      const intervals = this.state.intervals;
+      intervals.push(setInterval.apply(null, arguments));
+      this.setState({intervals: intervals})
+    }
+    componentWillUnmount() {
+      this.state.intervals.map(clearInterval);
+      this.setState({intervals: []})
+    }
+    render() {
+      return <WrappedComponent {...this.props}/>
+    }
+  }
+}
+
+function withCartTimeout(WrappedComponent) {
+  return class extends WrappedComponent {
+    componentWillMount() {
+      this.setInterval(this.decrementCartTimer.bind(this), 1000);
+    }
+    decrementCartTimer() {
+      if (this.props.cartTimeout === 0) {
+        this.props.alertCartTimeout();
+      } else {
+        this.props.updateCartTimeout(this.props.cartTimeout - 1);
+      }
+    }
+    render() {
+      return super.render()
+    }
+  }
+}
+
+const ShippingDetailsWithTimeout = withCartTimeout(withIntervals(ShippingDetails));
+ShippingDetailsWithTimeout.propTypes = {
+  alertCartTimeout: React.PropTypes.func.isRequired,
+  updateCartTimeout: React.PropTypes.func.isRequired,
+  cartTimeout: React.PropTypes.number.isRequired
+};
+
+const DeliveryDetailsWithTimeout = withCartTimeout(withIntervals(DeliveryDetails));
+DeliveryDetailsWithTimeout.propTypes = {
+  alertCartTimeout: React.PropTypes.func.isRequired,
+  updateCartTimeout: React.PropTypes.func.isRequired,
+  cartTimeout: React.PropTypes.number.isRequired
+};
+
 class BookStore extends Component {
   constructor(props) {
     super(props);
     this.state = {
       currentState: 1,
-      formValues: {}
+      formValues: {},
+      cartTimeout: 10
     }
+  }
+  updateCartTimeout(timeout) {
+    this.setState({cartTimeout: timeout})
+  }
+  alertCartTimeout(){
+    this.setState({currentState: 10});
   }
   render() {
     switch (this.state.currentState) {
-      case 5: return <Success data={this.state.formValues} />;
-      case 4: return <Confirmation data={this.state.formValues} updateFormData={(fromData) => this.updateFormData(fromData)} />;
-      case 2: return <ShippingDetails updateFormData={(fromData) => this.updateFormData(fromData)} />;
-      case 3: return <DeliveryDetails updateFormData={(fromData) => this.updateFormData(fromData)} />;
+      case 10:
+        /* Handle the case of Cart timeout */
+        return <div><h2>Your cart timed out, Please try again!</h2></div>;
+      case 5:
+        return <Success data={this.state.formValues} />;
+      case 4:
+        return <Confirmation data={this.state.formValues}
+                             updateFormData={(fromData) => this.updateFormData(fromData)}
+                             cartTimeout={this.state.cartTimeout} />;
+      case 3:
+        return <DeliveryDetailsWithTimeout updateFormData={(fromData) => this.updateFormData(fromData)}
+                                           cartTimeout={this.state.cartTimeout}
+                                           updateCartTimeout={(timeout) => this.updateCartTimeout(timeout)}
+                                           alertCartTimeout={() => this.alertCartTimeout()} />;
+      case 2:
+        return <ShippingDetailsWithTimeout updateFormData={(fromData) => this.updateFormData(fromData)}
+                                           cartTimeout={this.state.cartTimeout}
+                                           updateCartTimeout={(timeout) => this.updateCartTimeout(timeout)}
+                                           alertCartTimeout={() => this.alertCartTimeout()} />;
       default:
-      case 1: return <BookList updateFormData={(fromData) => this.updateFormData(fromData)} />
+      case 1:
+        return <BookList updateFormData={(fromData) => this.updateFormData(fromData)} />
     }
   }
   updateFormData(fromData) {
-    let formValues = Object.assign({}, this.state.formValues, fromData);
-    let currentState = 1 + this.state.currentState;
+    const formValues = Object.assign({}, this.state.formValues, fromData);
+    const currentState = 1 + this.state.currentState;
     this.setState({currentState: currentState, formValues: formValues})
   }
 }
