@@ -317,24 +317,13 @@ DeliveryDetailsWithTimeout.propTypes = {
 };
 
 class ModalAlertTimeout extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      show: false
-    }
-  }
-  showModal() {
-    this.setState({show: true});
-  }
-  hideModal() {
-    this.setState({show: false});
-  }
-  componentDidMount() {
-    setTimeout(() => this.showModal(), 100)
+  hideModal(event) {
+    event.stopPropagation();
+    ReactDOM.unmountComponentAtNode(document.getElementById('modalAlertTimeout'));
   }
   render() {
     return (
-      <Modal show={this.state.show} onHide={() => this.hideModal()}>
+      <Modal show onHide={(event) => this.hideModal(event)}>
         <Modal.Header closeButton>
           <Modal.Title>Timeout</Modal.Title>
         </Modal.Header>
@@ -352,7 +341,7 @@ class BookStore extends Component {
     this.state = {
       currentState: 1,
       formValues: {},
-      cartTimeout: 600
+      cartTimeout: 2
     }
   }
   updateCartTimeout(timeout) {
