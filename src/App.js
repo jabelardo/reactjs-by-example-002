@@ -292,7 +292,7 @@ function withIntervals(WrappedComponent) {
 }
 
 function withCartTimeout(WrappedComponent) {
-  return class extends WrappedComponent {
+  return class extends withIntervals(Component) {
     componentWillMount() {
       this.setInterval(this.decrementCartTimer.bind(this), 1000);
     }
@@ -304,19 +304,19 @@ function withCartTimeout(WrappedComponent) {
       }
     }
     render() {
-      return super.render()
+      return <WrappedComponent {...this.props}/>
     }
   }
 }
 
-const ShippingDetailsWithTimeout = withCartTimeout(withIntervals(ShippingDetails));
+const ShippingDetailsWithTimeout = withCartTimeout(ShippingDetails);
 ShippingDetailsWithTimeout.propTypes = {
   alertCartTimeout: React.PropTypes.func.isRequired,
   updateCartTimeout: React.PropTypes.func.isRequired,
   cartTimeout: React.PropTypes.number.isRequired
 };
 
-const DeliveryDetailsWithTimeout = withCartTimeout(withIntervals(DeliveryDetails));
+const DeliveryDetailsWithTimeout = withCartTimeout(DeliveryDetails);
 DeliveryDetailsWithTimeout.propTypes = {
   alertCartTimeout: React.PropTypes.func.isRequired,
   updateCartTimeout: React.PropTypes.func.isRequired,
@@ -329,7 +329,7 @@ class BookStore extends Component {
     this.state = {
       currentState: 1,
       formValues: {},
-      cartTimeout: 10
+      cartTimeout: 10 * 60
     }
   }
   updateCartTimeout(timeout) {
