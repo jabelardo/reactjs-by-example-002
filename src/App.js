@@ -341,7 +341,7 @@ class BookStore extends Component {
     this.state = {
       currentState: 1,
       formValues: {},
-      cartTimeout: 2
+      cartTimeout: 600
     }
   }
   updateCartTimeout(timeout) {
